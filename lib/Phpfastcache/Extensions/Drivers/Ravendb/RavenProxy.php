@@ -21,12 +21,18 @@ use Phpfastcache\Core\Pool\ExtendedCacheItemPoolInterface;
 use Phpfastcache\Core\Pool\TaggableCacheItemPoolInterface;
 use Phpfastcache\Exceptions\PhpfastcacheInvalidArgumentException;
 
+/**
+ * @internal
+ */
 class RavenProxy
 {
     protected ?string $key;
 
     protected mixed $data;
 
+    /**
+     * @var array<string>
+     */
     protected array $tags = [];
 
     protected \DateTimeInterface $expirationDate;
@@ -69,11 +75,18 @@ class RavenProxy
         return $this;
     }
 
+    /**
+     * @return array<string>
+     */
     public function getTags(): array
     {
         return $this->tags;
     }
 
+    /**
+     * @param array<string> $tags
+     * @return $this
+     */
     public function setTags(array $tags): self
     {
         $this->tags = $tags;
@@ -129,6 +142,9 @@ class RavenProxy
         }
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function toDriverArray(): array
     {
         return [

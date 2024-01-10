@@ -23,6 +23,9 @@ use RavenDB\Auth\AuthOptions;
 
 class Config extends ConfigurationOption
 {
+    /**
+     * @var array<string>
+     */
     protected array $hosts = [];
     protected string $username = '';
     protected string $password = '';
