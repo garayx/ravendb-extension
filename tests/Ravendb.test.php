@@ -13,7 +13,6 @@
  */
 
 use Phpfastcache\CacheManager;
-use Phpfastcache\EventManager;
 use Phpfastcache\Exceptions\PhpfastcacheDriverConnectException;
 use Phpfastcache\Tests\Helper\TestHelper;
 
@@ -26,16 +25,6 @@ if (!file_exists($configFileName)) {
 }
 
 try {
-//    EventManager::getInstance()->on(['onCouchdbCreateOptions'], static function() use ($testHelper){
-//        $args = func_get_args();
-//        $eventName = $args[array_key_last($args)];
-//        $testHelper->printDebugText(
-//            sprintf(
-//                'Couchdb db event "%s" has been triggered.',
-//                $eventName
-//            )
-//        );
-//    });
     $cacheInstance = CacheManager::getInstance('Ravendb', include $configFileName);
     $testHelper->runCRUDTests($cacheInstance);
     // $testHelper->runGetAllItemsTests($cacheInstance);

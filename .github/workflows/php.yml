@@ -25,6 +25,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Install Couchdb Server
+        run: ./tests/Scripts/install_ravendb.sh
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -48,5 +51,5 @@ jobs:
       - name: Run quality tools
         run: composer run-script quality
 
-#      - name: Run tests
-#        run: composer run-script tests
+      - name: Run tests
+        run: composer run-script tests
