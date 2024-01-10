@@ -52,4 +52,6 @@ jobs:
         run: composer run-script quality
 
       - name: Run tests
+        env:
+          RAVENDB_TEST_DATABASE_HOSTNAME: ${{ vars.RAVENDB_TEST_DATABASE_HOSTNAME }}
         run: composer run-script tests
