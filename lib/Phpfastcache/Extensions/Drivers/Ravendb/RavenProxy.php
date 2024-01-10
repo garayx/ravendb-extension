@@ -1,0 +1,153 @@
+<?php
+
+/**
+ *
+ * This file is part of Phpfastcache.
+ *
+ * @license MIT License (MIT)
+ *
+ * For full copyright and license information, please see the docs/CREDITS.txt and LICENCE files.
+ *
+ * @author Georges.L (Geolim4)  <contact@geolim4.com>
+ * @author Contributors  https://github.com/PHPSocialNetwork/phpfastcache/graphs/contributors
+ */
+
+declare(strict_types=1);
+
+namespace Phpfastcache\Extensions\Drivers\Ravendb;
+
+use Phpfastcache\Core\Item\ExtendedCacheItemInterface;
+use Phpfastcache\Core\Pool\ExtendedCacheItemPoolInterface;
+use Phpfastcache\Core\Pool\TaggableCacheItemPoolInterface;
+use Phpfastcache\Exceptions\PhpfastcacheInvalidArgumentException;
+
+class RavenProxy
+{
+    protected ?string $key;
+
+    protected mixed $data;
+
+    protected array $tags = [];
+
+    protected \DateTimeInterface $expirationDate;
+
+    protected ?\DateTimeInterface $creationDate = null;
+
+    protected ?\DateTimeInterface $modificationDate = null;
+
+    public function __construct(?ExtendedCacheItemInterface $item = null, protected bool $serializeData = true, protected bool $detailedDate = false)
+    {
+        if ($item) {
+            $this->fromCacheItem($item);
+        }
+    }
+
+    public function getKey(): ?string
+    {
+        return $this->key ?? null;
+    }
+
+    public function setKey(string $key): self
+    {
+        if (isset($this->key)) {
+            throw new PhpfastcacheInvalidArgumentException('Cannot change key');
+        }
+
+        $this->key = $key;
+        return $this;
+    }
+
+    public function getData(): mixed
+    {
+        return $this->data;
+    }
+
+    public function setData(mixed $data): self
+    {
+        $this->data = $this->serializeData ? serialize($data) : $data;
+
+        return $this;
+    }
+
+    public function getTags(): array
+    {
+        return $this->tags;
+    }
+
+    public function setTags(array $tags): self
+    {
+        $this->tags = $tags;
+        return $this;
+    }
+
+    public function getExpirationDate(): \DateTimeInterface
+    {
+        return $this->expirationDate;
+    }
+
+    public function setExpirationDate(\DateTimeInterface $expirationDate): self
+    {
+        $this->expirationDate = $expirationDate;
+        return $this;
+    }
+
+    public function getCreationDate(): ?\DateTimeInterface
+    {
+        return $this->creationDate;
+    }
+
+    public function setCreationDate(?\DateTimeInterface $creationDate): self
+    {
+        $this->creationDate = $creationDate;
+        return $this;
+    }
+
+    public function getModificationDate(): ?\DateTimeInterface
+    {
+        return $this->modificationDate;
+    }
+
+    public function setModificationDate(?\DateTimeInterface $modificationDate): self
+    {
+        $this->modificationDate = $modificationDate;
+        return $this;
+    }
+
+    public function fromCacheItem(ExtendedCacheItemInterface $item): void
+    {
+        if (!isset($this->key)) {
+            $this->setKey($item->getKey());
+        }
+
+        $this->setData($item->_getData())
+            ->setExpirationDate($item->getExpirationDate())
+            ->setTags($item->getTags());
+
+        if ($this->detailedDate) {
+            $this->setModificationDate($item->getModificationDate())
+                ->setCreationDate($item->getCreationDate());
+        }
+    }
+
+    public function toDriverArray(): array
+    {
+        return [
+            ExtendedCacheItemPoolInterface::DRIVER_KEY_WRAPPER_INDEX => $this->key,
+            ExtendedCacheItemPoolInterface::DRIVER_DATA_WRAPPER_INDEX => ($this->serializeData ? unserialize($this->data) : $this->data),
+            ExtendedCacheItemPoolInterface::DRIVER_EDATE_WRAPPER_INDEX => $this->expirationDate,
+            ExtendedCacheItemPoolInterface::DRIVER_CDATE_WRAPPER_INDEX => $this->creationDate,
+            ExtendedCacheItemPoolInterface::DRIVER_MDATE_WRAPPER_INDEX => $this->modificationDate,
+            TaggableCacheItemPoolInterface::DRIVER_TAGS_WRAPPER_INDEX => $this->tags,
+        ];
+    }
+
+    public function setSerializeData(bool $serializeData): void
+    {
+        $this->serializeData = $serializeData;
+    }
+
+    public function setDetailedDate(bool $detailedDate): void
+    {
+        $this->detailedDate = $detailedDate;
+    }
+}

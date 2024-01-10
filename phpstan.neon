@@ -1,0 +1,8 @@
+###################################################
+# Complete PHPSTAN configuration for Travis CI
+###################################################
+parameters:
+    treatPhpDocTypesAsCertain: false
+    ignoreErrors:
+        # (Really) Annoying PHPDoc tag issues...
+        - '#PHPDoc tag @(.*)#'
