@@ -25,7 +25,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Install Couchdb Server
+      - name: Install Ravendb Server
         run: ./tests/Scripts/install_ravendb.sh
 
       - name: Setup PHP
