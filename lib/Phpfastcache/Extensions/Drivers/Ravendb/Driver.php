@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace Phpfastcache\Extensions\Drivers\Ravendb;
 
+use Composer\InstalledVersions;
 use Phpfastcache\Cluster\AggregatablePoolInterface;
 use Phpfastcache\Core\Pool\ExtendedCacheItemPoolInterface;
 use Phpfastcache\Core\Pool\TaggableCacheItemPoolTrait;
@@ -29,7 +30,11 @@ use RavenDB\Documents\DocumentStore;
 use RavenDB\Documents\Operations\DeleteByQueryOperation;
 use RavenDB\Documents\Queries\IndexQuery;
 use RavenDB\Documents\Session\DocumentSession;
+use RavenDB\Documents\Session\QueryStatistics;
 use RavenDB\Exceptions\RavenException;
+use RavenDB\Http\ServerNode;
+use RavenDB\ServerWide\Operations\BuildNumber;
+use RavenDB\ServerWide\Operations\GetBuildNumberOperation;
 
 /**
  * Class Driver
@@ -68,14 +73,6 @@ HELP;
     }
 
     /**
-     * @return DriverStatistic
-     */
-    public function getStats(): DriverStatistic
-    {
-        return new DriverStatistic();
-    }
-
-    /**
      * @return bool
      * @throws PhpfastcacheDriverConnectException
      */
@@ -97,14 +94,6 @@ HELP;
         }
 
         return true;
-    }
-
-    /**
-     * @return string
-     */
-    protected function getDatabaseName(): string
-    {
-        return $this->getConfig()->getDatabaseName() ?: static::RAVENDB_DEFAULT_DB_NAME;
     }
 
     /**
@@ -250,5 +239,40 @@ HELP;
 
         $this->instance->clear();
         return true;
+    }
+
+    /**
+     * @return DriverStatistic
+     */
+    public function getStats(): DriverStatistic
+    {
+        $nodes = $this->instance->getRequestExecutor()->getTopology()->getNodes();
+        /** @var BuildNumber|null $buildNumber */
+        $buildNumber = $this->documentStorage->maintenance()->server()->send(new GetBuildNumberOperation());
+
+        return (new DriverStatistic())
+            ->setRawData(['build' => $buildNumber, 'nodes' => $nodes])
+            ->setInfo(
+                sprintf(
+                    'Ravendb server v%s (%s), client v%s with %s node%s configured: %s',
+                    $buildNumber?->getFullVersion() ?? 'Unknown version',
+                    $buildNumber?->getCommitHash() ?? '********',
+                    InstalledVersions::getPrettyVersion('ravendb/ravendb-php-client'),
+                    count($nodes),
+                    count($nodes) !== 1 ? 's' : '',
+                    implode(', ', array_map(
+                        fn(ServerNode $node) => 'Node #' . $node->getClusterTag() . ' (' . $node->getServerRole()->getValue() . ') @ ' . $node->getUrl()->getValue(),
+                        iterator_to_array($nodes)
+                    ))
+                )
+            );
+    }
+
+    /**
+     * @return string
+     */
+    protected function getDatabaseName(): string
+    {
+        return $this->getConfig()->getDatabaseName() ?: static::RAVENDB_DEFAULT_DB_NAME;
     }
 }
