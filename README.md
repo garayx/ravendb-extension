@@ -23,7 +23,10 @@ composer install phpfastcache/ravendb-extension
 ```
 
 #### ⚠️ This extension requires:
-1️ The composer `ravendb/ravendb-php-client` library `5.2` at least.
+1️ The composer `ravendb/ravendb-php-client` library `5.2.2` at least.
+
+2️⃣ PHP **8.1** at least due to `ravendb/ravendb-php-client` limitations.
+
 
 ## Events
 This driver is currently not emitting [customs events](https://github.com/PHPSocialNetwork/phpfastcache/blob/master/docs/EVENTS.md):

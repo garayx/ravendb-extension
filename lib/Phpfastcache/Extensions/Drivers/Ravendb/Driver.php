@@ -231,21 +231,10 @@ HELP;
      */
     protected function driverDeleteMultiple(array $keys): bool
     {
-        $this->documentStorage->operations()->send(
-            new DeleteByQueryOperation(
-                new IndexQuery(
-                    sprintf(
-                        "from %s where id() IN ('%s')",
-                        $this->getConfig()->getCollectionName(),
-                        implode("', '", array_map(fn (string $key) => $this->documentPrefix . $key, $keys))
-                    )
-                )
-            )
-        );
-
         foreach ($keys as $key) {
-            $this->instance->documentsById->remove($this->documentPrefix . $key);
+            $this->instance->delete($this->documentPrefix . $key);
         }
+        $this->instance->saveChanges();
 
         return true;
     }
@@ -256,7 +245,7 @@ HELP;
     protected function driverClear(): bool
     {
         $this->documentStorage->operations()->send(
-            new DeleteByQueryOperation(new IndexQuery(sprintf("from %s", $this->getConfig()->getCollectionName())))
+            new DeleteByQueryOperation(new IndexQuery(sprintf('from %s', $this->getConfig()->getCollectionName())))
         );
 
         $this->instance->clear();

@@ -16,9 +16,9 @@
             }
     ],
     "require": {
-        "php": ">=8.0",
+        "php": ">=8.1",
         "phpfastcache/phpfastcache": "^9.2.2",
-        "ravendb/ravendb-php-client": "^5.2"
+        "ravendb/ravendb-php-client": "^5.2.2"
     },
     "require-dev": {
         "phpmd/phpmd": "@stable",
