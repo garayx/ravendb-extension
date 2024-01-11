@@ -143,18 +143,21 @@ class RavenProxy
     }
 
     /**
-     * @return array<string, mixed>
+     * @return null|array<string, mixed>
      */
-    public function toDriverArray(): array
+    public function toDriverArray(): ?array
     {
-        return [
-            ExtendedCacheItemPoolInterface::DRIVER_KEY_WRAPPER_INDEX => $this->key,
-            ExtendedCacheItemPoolInterface::DRIVER_DATA_WRAPPER_INDEX => ($this->serializeData ? unserialize($this->data) : $this->data),
-            ExtendedCacheItemPoolInterface::DRIVER_EDATE_WRAPPER_INDEX => $this->expirationDate,
-            ExtendedCacheItemPoolInterface::DRIVER_CDATE_WRAPPER_INDEX => $this->creationDate,
-            ExtendedCacheItemPoolInterface::DRIVER_MDATE_WRAPPER_INDEX => $this->modificationDate,
-            TaggableCacheItemPoolInterface::DRIVER_TAGS_WRAPPER_INDEX => $this->tags,
-        ];
+        if ($this->key) {
+            return [
+                ExtendedCacheItemPoolInterface::DRIVER_KEY_WRAPPER_INDEX => $this->key,
+                ExtendedCacheItemPoolInterface::DRIVER_DATA_WRAPPER_INDEX => ($this->serializeData ? unserialize($this->data) : $this->data),
+                ExtendedCacheItemPoolInterface::DRIVER_EDATE_WRAPPER_INDEX => $this->expirationDate,
+                ExtendedCacheItemPoolInterface::DRIVER_CDATE_WRAPPER_INDEX => $this->creationDate,
+                ExtendedCacheItemPoolInterface::DRIVER_MDATE_WRAPPER_INDEX => $this->modificationDate,
+                TaggableCacheItemPoolInterface::DRIVER_TAGS_WRAPPER_INDEX => $this->tags,
+            ];
+        }
+        return null;
     }
 
     public function setSerializeData(bool $serializeData): void
