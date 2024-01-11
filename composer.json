@@ -17,9 +17,8 @@
     ],
     "require": {
         "php": ">=8.0",
-        "phpfastcache/phpfastcache": "^9.2",
-        "ravendb/ravendb-php-client": "^5.2",
-        "symfony/var-dumper": "^6.0"
+        "phpfastcache/phpfastcache": "^9.2.2",
+        "ravendb/ravendb-php-client": "^5.2"
     },
     "require-dev": {
         "phpmd/phpmd": "@stable",
