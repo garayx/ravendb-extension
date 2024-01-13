@@ -27,19 +27,25 @@ use Phpfastcache\Exceptions\PhpfastcacheDriverException;
 use Phpfastcache\Exceptions\PhpfastcacheInvalidArgumentException;
 use Phpfastcache\Exceptions\PhpfastcacheUnsupportedMethodException;
 use RavenDB\Documents\DocumentStore;
+use RavenDB\Documents\Operations\CollectionStatistics;
 use RavenDB\Documents\Operations\DeleteByQueryOperation;
+use RavenDB\Documents\Operations\DetailedDatabaseStatistics;
+use RavenDB\Documents\Operations\GetCollectionStatisticsOperation;
+use RavenDB\Documents\Operations\GetDetailedStatisticsOperation;
 use RavenDB\Documents\Queries\IndexQuery;
 use RavenDB\Documents\Session\DocumentSession;
-use RavenDB\Documents\Session\QueryStatistics;
 use RavenDB\Exceptions\RavenException;
 use RavenDB\Http\ServerNode;
 use RavenDB\ServerWide\Operations\BuildNumber;
+use RavenDB\ServerWide\Operations\Configuration\GetDatabaseSettingsOperation;
 use RavenDB\ServerWide\Operations\GetBuildNumberOperation;
+use RavenDB\Type\Duration;
 
 /**
  * Class Driver
  * @property DocumentSession $instance Instance of driver service
  * @method Config getConfig()
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class Driver implements AggregatablePoolInterface
 {
@@ -85,10 +91,15 @@ HELP;
             if ($authOptions) {
                 $this->documentStorage->setAuthOptions($authOptions);
             }
-            $this->documentStorage->getConventions()->setFindCollectionName(fn () => $this->getConfig()->getCollectionName());
+            $this->documentStorage->getConventions()->setFindCollectionName(fn () => $this->getCollectionName());
             $this->documentStorage->getConventions()->setFindIdentityProperty(static fn () => 'key');
+            $this->documentStorage->getConventions()->setRequestTimeout(Duration::ofSeconds(1));
             $this->documentStorage->initialize();
+            $this->documentStorage->getRequestExecutor()->setDefaultTimeout(Duration::ofSeconds(1));
             $this->instance = $this->documentStorage->openSession();// @phpstan-ignore-line
+            if ($this->documentStorage->maintenance()->send(new GetDatabaseSettingsOperation($this->getDatabaseName())) === null) {
+                throw new RavenException('Unable to fetch databases metadata.');
+            }
         } catch (RavenException $e) {
             throw new PhpfastcacheDriverConnectException('Unable to connect to Raven server: ' . $e->getMessage());
         }
@@ -234,7 +245,7 @@ HELP;
     protected function driverClear(): bool
     {
         $this->documentStorage->operations()->send(
-            new DeleteByQueryOperation(new IndexQuery(sprintf('from %s', $this->getConfig()->getCollectionName())))
+            new DeleteByQueryOperation(new IndexQuery(sprintf('from %s', $this->getCollectionName())))
         );
 
         $this->instance->clear();
@@ -249,12 +260,16 @@ HELP;
         $nodes = $this->instance->getRequestExecutor()->getTopology()->getNodes();
         /** @var BuildNumber|null $buildNumber */
         $buildNumber = $this->documentStorage->maintenance()->server()->send(new GetBuildNumberOperation());
+        /** @var CollectionStatistics $collectionStats */
+        $collectionStats = $this->documentStorage->maintenance()->send(new GetCollectionStatisticsOperation());
+        /** @var DetailedDatabaseStatistics $databaseStats */
+        $databaseStats = $this->documentStorage->maintenance()->send(new GetDetailedStatisticsOperation());
 
-        return (new DriverStatistic())
-            ->setRawData(['build' => $buildNumber, 'nodes' => $nodes])
+        $driverStats = (new DriverStatistic())
+            ->setRawData(compact('nodes', 'buildNumber', 'collectionStats', 'databaseStats'))
             ->setInfo(
                 sprintf(
-                    'Ravendb server v%s (%s), client v%s with %s node%s configured: %s',
+                    'Ravendb server v%s (%s), client v%s with %s node%s configured: %s. Database/Collection: "%s"/"%s".',
                     $buildNumber?->getFullVersion() ?? 'Unknown version',
                     $buildNumber?->getCommitHash() ?? '********',
                     InstalledVersions::getPrettyVersion('ravendb/ravendb-php-client'),
@@ -263,9 +278,19 @@ HELP;
                     implode(', ', array_map(
                         fn(ServerNode $node) => 'Node #' . $node->getClusterTag() . ' (' . $node->getServerRole()->getValue() . ') @ ' . $node->getUrl()->getValue(),
                         iterator_to_array($nodes)
-                    ))
+                    )),
+                    $this->getDatabaseName(),
+                    $this->getCollectionName(),
                 )
             );
+
+        if (method_exists($driverStats, 'setCount')) {
+            $driverStats->setCount(
+                $collectionStats->getCollections()[$this->getCollectionName()] ?? $collectionStats->getCountOfDocuments()
+            );
+        }
+
+        return $driverStats;
     }
 
     /**
@@ -274,5 +299,13 @@ HELP;
     protected function getDatabaseName(): string
     {
         return $this->getConfig()->getDatabaseName() ?: static::RAVENDB_DEFAULT_DB_NAME;
+    }
+
+    /**
+     * @return string
+     */
+    protected function getCollectionName(): string
+    {
+        return $this->getConfig()->getCollectionName() ?: static::RAVENDB_DEFAULT_COLLECTION_NAME;
     }
 }
