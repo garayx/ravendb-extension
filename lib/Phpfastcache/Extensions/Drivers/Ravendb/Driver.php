@@ -127,7 +127,6 @@ HELP;
 
         if ($ravenDocument instanceof RavenProxy) {
             $ravenDocument->setDetailedDate($this->getConfig()->isItemDetailedDate());
-            $ravenDocument->setSerializeData($this->getConfig()->isSerializeData());
             return $ravenDocument;
         }
 

@@ -41,7 +41,7 @@ class RavenProxy
 
     protected ?\DateTimeInterface $modificationDate = null;
 
-    public function __construct(?ExtendedCacheItemInterface $item = null, protected bool $serializeData = true, protected bool $detailedDate = false)
+    public function __construct(?ExtendedCacheItemInterface $item = null, protected bool $detailedDate = false)
     {
         if ($item) {
             $this->fromCacheItem($item);
@@ -70,8 +70,7 @@ class RavenProxy
 
     public function setData(mixed $data): self
     {
-        $this->data = $this->serializeData ? serialize($data) : $data;
-
+        $this->data = $data;
         return $this;
     }
 
@@ -133,8 +132,10 @@ class RavenProxy
         }
 
         $this->setData($item->_getData())
-            ->setExpirationDate($item->getExpirationDate())
-            ->setTags($item->getTags());
+        ->setExpirationDate($item->getExpirationDate())
+        ->setCreationDate($item->getCreationDate())
+        ->setModificationDate($item->getModificationDate())
+        ->setTags($item->getTags());
 
         if ($this->detailedDate) {
             $this->setModificationDate($item->getModificationDate())
@@ -150,7 +151,7 @@ class RavenProxy
         if ($this->key) {
             return [
                 ExtendedCacheItemPoolInterface::DRIVER_KEY_WRAPPER_INDEX => $this->key,
-                ExtendedCacheItemPoolInterface::DRIVER_DATA_WRAPPER_INDEX => ($this->serializeData ? unserialize($this->data) : $this->data),
+                ExtendedCacheItemPoolInterface::DRIVER_DATA_WRAPPER_INDEX => $this->data,
                 ExtendedCacheItemPoolInterface::DRIVER_EDATE_WRAPPER_INDEX => $this->expirationDate,
                 ExtendedCacheItemPoolInterface::DRIVER_CDATE_WRAPPER_INDEX => $this->creationDate,
                 ExtendedCacheItemPoolInterface::DRIVER_MDATE_WRAPPER_INDEX => $this->modificationDate,
@@ -158,11 +159,6 @@ class RavenProxy
             ];
         }
         return null;
-    }
-
-    public function setSerializeData(bool $serializeData): void
-    {
-        $this->serializeData = $serializeData;
     }
 
     public function setDetailedDate(bool $detailedDate): void

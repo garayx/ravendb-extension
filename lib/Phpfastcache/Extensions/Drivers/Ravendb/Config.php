@@ -169,17 +169,6 @@ class Config extends ConfigurationOption
         return $this->serializeData;
     }
 
-    /**
-     * @param bool $serializeData
-     * @return self
-     * @throws PhpfastcacheInvalidArgumentException
-     * @throws PhpfastcacheLogicException
-     */
-    public function setSerializeData(bool $serializeData): static
-    {
-        return $this->setProperty('serializeData', $serializeData);
-    }
-
     public function getAuthOptions(): ?AuthOptions
     {
         return $this->authOptions;
